@@ -54,6 +54,7 @@ namespace MyRSA
                 b = r;
                 r = a % b;
             }
+            // avoiding negative xn
             return ((xn % tmp) + tmp) % tmp;
         }
 
@@ -82,6 +83,9 @@ namespace MyRSA
         private BigInteger getRandom()
         {
             RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
+            //  p and q length is 8 * randomNumber.count = 512
+            // wherefore n length is 1024
+            // 1024 is not the best choice, length is set quite small for educational purposes
             byte[] randomNumber = new byte[64];
             rng.GetBytes(randomNumber);
             BigInteger result = new BigInteger(randomNumber);
@@ -93,24 +97,30 @@ namespace MyRSA
 
         private bool fermatTest(BigInteger x, int lim = 100)
         {
+            // preselecting with small primes
             for (int i = 0; i < primes.Count(); i++)
                 if (x % primes[i] == 0)
                     return false;
 
             for (int i = 0; i < lim; i++)
             {
+                // avoiding 0 and 1
                 BigInteger curRandom = getRandom() % (x - 2) + 2;
                 if (myGcd(curRandom, x) != 1)
                     return false;
                 if (square_and_multiply(curRandom, x - 1, x) != 1)
                     return false;
             }
+            // x is prime with probability 1 - (0.5)^100
             return true;
         }
 
         public BigInteger genPrime()
         {
             BigInteger x = getRandom();
+            // the idea is that in average every ln(2^512) number should be prime
+            // but to avoid bad cases where gaps between primes are quite large
+            // it's better to regenerate x after some number of unsuccesfull iterations
             while (fermatTest(x) == false)
             {
                 x = getRandom();
